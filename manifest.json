@@ -1,0 +1,19 @@
+{
+  "manifest_version": 2,
+
+  "name": "VK AD BLOCKER",
+  "description": "This extension that blocks vk.com ads",
+  "version": "1.0",
+
+  "browser_action": {
+    "default_icon": "icon.png"
+  },
+
+  "content_scripts": [
+    {
+      "matches": ["*://*.vk.com/*"],
+      "run_at": "document_end",
+      "js": ["contentscript.js"]
+    }
+  ]
+}
