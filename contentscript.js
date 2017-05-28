@@ -11,13 +11,13 @@
         if (!htmlCollection || htmlCollection.length === 0) return [];
         return [].slice.call(htmlCollection);
     };
-    AdBlocker.prototype.waitForElementToDisplay = function(selector, time, cb) {
-        var target = document.querySelector(selector);
+    AdBlocker.prototype.waitForElementToDisplay = function(cssSelector, time, cb, endless) {
+        var target = document.querySelector(cssSelector);
         if( target != null ) {
             return cb.bind(this)(target);
         }  else {
             setTimeout(function() {
-                this.waitForElementToDisplay(selector, time);
+                this.waitForElementToDisplay(cssSelector, time);
             }.bind(this), time);
         }
     };
@@ -39,9 +39,7 @@
         if (cbCallInstantly) {
             this.htmlCollectionToArray(
                 parentEl.querySelectorAll(cssSelector)
-            ).forEach(function (ad) {
-                this.hideElement(ad);
-            }.bind(this));
+            ).forEach(cb);
         }
     };
 
@@ -49,11 +47,13 @@
 
     var CONFIGS = {
         DEFAULT_TIMEOUT: 2000,
+        DEFAULT_INTERVAL: 2000,
         LEFT_AD_SELECTOR: "#ads_left",
         FEED_ROWS_SELECTOR: '#feed_rows',
         NEWS_ITEM_SELECTOR: "[data-ad]"
     };
 
+    // manage to hide the ads block on the left
     adBlockerInstance.waitForElementToDisplay(
         CONFIGS.LEFT_AD_SELECTOR,
         CONFIGS.DEFAULT_TIMEOUT,
@@ -67,18 +67,26 @@
         }
     );
 
-    adBlockerInstance.waitForElementToDisplay(
-        CONFIGS.FEED_ROWS_SELECTOR,
-        CONFIGS.DEFAULT_TIMEOUT,
-        function (feedRowsElement) {
-            if (!feedRowsElement) return;
-            this.whenDomAdded(
-                feedRowsElement,
-                CONFIGS.NEWS_ITEM_SELECTOR,
-                this.hideElement, true
-            );
+    // manage to hide ads in news feed
+    var feedRowsElement = null;
+    var detectAdsInFeedInitialized = false;
+    var intervalId = setInterval(function () {
+        var el = document.querySelector(CONFIGS.FEED_ROWS_SELECTOR);
+        if (!el || !el.nodeName) {
+            feedRowsElement = null;
+            detectAdsInFeedInitialized = false;
         }
-    );
+        if (!detectAdsInFeedInitialized && el) {
+            adBlockerInstance.whenDomAdded(
+                el,
+                CONFIGS.NEWS_ITEM_SELECTOR,
+                adBlockerInstance.hideElement,
+                true
+            );
+            feedRowsElement = el;
+            detectAdsInFeedInitialized = true;
+        }
+    }, CONFIGS.DEFAULT_INTERVAL)
 
     // end of IIFE
 })(this);
